@@ -7,46 +7,273 @@ A starter full-stack app using a modern frontend stack (React + Vite + MUI + Rea
 ---
 
 Table of Contents
-1. [Architecture](#architecture)  
-2. [Project Structure](#project-structure)  
-3. [Features](#features)  
-4. [Data Model & Validation](#data-model--validation)  
-5. [Environment Variables](#environment-variables)  
-6. [Run Locally (Backend + Frontend)](#run-locally-backend--frontend)  
-7. [Seed Admin User](#seed-admin-user)  
-8. [API Docs (curl)](#api-docs-curl)  
-9. [Frontend UX Tour](#frontend-ux-tour)  
-10. [Debugging Challenges](#debugging-challenges)  
-11. [Testing (nice-to-have)](#testing-nice-to-have)  
-12. [Docker & Docker Compose](#docker--docker-compose)  
-13. [Free Hosting (Vercel + Render + Atlas)](#free-hosting-vercel--render--atlas)  
-14. [Security Notes](#security-notes)  
-15. [Troubleshooting & FAQ](#troubleshooting--faq)  
-16. [AI Collaboration Log](#ai-collaboration-log)  
-17. [Tech Decisions & Trade-offs](#tech-decisions--trade-offs)  
-18. [Time Spent (template)](#time-spent-template)  
-19. [License](#license)
+
+1. [Project Structure](#project-structure)  
+2. [Features](#features)  
+3. [Data Model & Validation](#data-model--validation)  
+4. [Environment Variables](#environment-variables)  
+5. [Run Locally (Backend + Frontend)](#run-locally-backend--frontend)  
+6. [Seed Admin User](#seed-admin-user)  
+7. [API Docs (curl)](#api-docs-curl)  
+8. [Frontend UX Tour](#frontend-ux-tour)  
+9. [Debugging Challenges](#debugging-challenges)  
+10. [Testing (nice-to-have)](#testing-nice-to-have)  
+11. [Docker & Docker Compose](#docker--docker-compose)  
+12. [Security Notes](#security-notes)  
+13. [Troubleshooting & FAQ](#troubleshooting--faq)  
+14. [AI Collaboration Log](#ai-collaboration-log)  
+15. [Tech Decisions & Trade-offs](#tech-decisions--trade-offs)  
+16. [Time Spent (template)](#time-spent-template) 
+
 
 ---
 
-## Architecture
+# How Everything Works — End-to-End (Deep Dive)
 
-User’s Browser (React App)
-|
-v  HTTP requests
-/api/... (Axios via React Query)
-|
-v
-Express Backend (Node)
-|
-v
-MongoDB (Mongoose models + indexes)
-
-- Frontend renders pages/forms and calls the backend at `/api/...`.
-- Backend validates and persists data to MongoDB.
-- After login, frontend stores a **JWT** and sends it with each request.
+This section is a plain-English + diagram explanation of how the app works from the moment a user opens the site to the database update. It’s designed to sit near the top of your README (right after the short intro), so reviewers immediately understand the moving parts.
 
 ---
+
+## Big Picture (at a glance)
+
+```mermaid
+graph TD
+  A[Browser\n(React + Vite + MUI)] -->|Axios /api/*\n(React Query)| B[Express API\n(Node)]
+  B -->|Mongoose| C[(MongoDB)]
+  A -. stores JWT .-> A
+  B -. validates w/ Joi & Mongoose .-> B
+  B -. rate limit + helmet .-> B
+```
+
+Frontend (React) shows pages, forms, and tables.
+
+Axios sends HTTP requests to /api/.... React Query caches responses, refetches when needed, and handles loading/error states.
+
+Backend (Express) validates requests (Joi + Mongoose), enforces unique rules, and talks to MongoDB via Mongoose.
+
+JWT lives in localStorage and is attached as Authorization: Bearer <token> for API calls.
+
+Lifecycle: from page load to data saved
+
+1) User opens the app  
+Frontend loads the React app. If there’s a token in localStorage, the app treats the user as logged in (until proven otherwise). If no token, the router redirects to Login.
+
+<!-- Optional screenshot placeholder -->
+![Login Page](docs/media/login.png)
+
+2) Login flow (username/email + password)
+
+```mermaid
+sequenceDiagram
+  participant U as User (Browser)
+  participant FE as Frontend (React)
+  participant BE as Backend (Express)
+  participant DB as MongoDB
+
+  U->>FE: Submit login form
+  FE->>BE: POST /api/auth/login { usernameOrEmail, password }
+  BE->>DB: find user + bcrypt.compare()
+  DB-->>BE: user doc (if match)
+  BE-->>FE: 200 { token, user }
+  FE->>FE: save token in localStorage
+  FE-->>U: Navigate to / (Servers page)
+```
+
+On success, backend returns a signed JWT; frontend saves it and redirects to Servers. On failure, a red error message is shown.
+
+![Successful Login](docs/media/login-success.png)
+
+3) Servers list loads (data fetch)  
+The Servers page uses React Query to fetch:
+
+```bash
+GET /api/servers?page=1&limit=10&search=...&provider=...&status=...&sortBy=...&sortOrder=...
+```
+
+The JWT is automatically attached by an Axios interceptor.
+
+![Servers List](docs/media/servers-list.png)
+
+4) Filter/search/sort/paginate  
+Typing in search or changing filters updates the query string and refetches.
+
+Backend applies:
+- Text search on name or ip_address ($regex)
+- Equality filters on provider and status
+- Sorting (e.g., createdAt desc)
+- Pagination with page, limit
+
+![Filters + Search](docs/media/servers-filters.png)
+
+5) Create / Edit server (dialog)  
+Clicking Add New opens a dialog (MUI). Client-side validation ensures required fields & ranges look valid before calling API.
+
+Submit → POST /api/servers or PUT /api/servers/:id.
+
+Backend runs Joi validation (with stripUnknown) and Mongoose validation (types, ranges, enums, unique indexes). If any rule fails (e.g., duplicate ip_address), backend returns a clean 400 with a helpful message.
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend (React)
+  participant BE as Backend (Express)
+  participant DB as MongoDB
+
+  U->>FE: Fill form + submit
+  FE->>BE: POST/PUT /api/servers ...
+  BE->>BE: Joi validate + sanitize
+  BE->>DB: Mongoose save/update (unique indexes)
+  DB-->>BE: OK or 11000 (duplicate key)
+  BE-->>FE: 201/200 (data) or 400 (error)
+  FE->>FE: invalidate & refetch servers list
+```
+
+![Create Dialog](docs/media/create-dialog.png)  
+![Edit Dialog](docs/media/edit-dialog.png)
+
+6) Bulk delete  
+Select multiple rows, click Bulk Delete → POST /api/servers/bulk-delete { ids: [...] }.
+
+On success, list refetches; if one or more fail, a descriptive error shows and selection remains, avoiding state desync.
+
+![Bulk Delete](docs/media/bulk-delete.png)
+
+What the backend enforces (business rules)
+- Uniqueness
+  - ip_address must be unique (global)
+  - (name, provider) pair must be unique
+- Value ranges
+  - cpu_cores ∈ [1..128]
+  - ram_mb ∈ [512..1048576]
+  - storage_gb ∈ [10..1048576]
+- Enums
+  - provider ∈ {aws, digitalocean, vultr, other}
+  - status ∈ {active, inactive, maintenance}
+- Timestamps
+  - createdAt, updatedAt are auto-managed by Mongoose
+
+Indexing for speed (large lists):
+- { name: 1, provider: 1 } (unique)
+- { ip_address: 1 } (unique)
+- { provider: 1, status: 1 }
+- { createdAt: -1 }
+
+UI Details (the polish)
+- Status chips
+  - active → green
+  - inactive → red
+  - maintenance → amber
+- Destructive actions (Delete, Bulk Delete) are red buttons
+- Dialogs use icons + clear labels + required marks
+- Errors show helpful messages (from API) and do not mutate UI state if update fails (prevents desync)
+
+![Grid View](docs/media/servers-grid.png)
+
+Error handling & resilience
+
+Client
+- React Query exposes isLoading / isError to show spinners and friendly errors
+- Optional Axios retry for transient 5xx (commented example included)
+
+Server
+- Joi validation errors → 400 with details
+- Duplicate key (11000) → 400, message: "Duplicate Entry"
+- Bad :id format → 400, message: "Invalid id"
+- Not found → 404
+- Rate-limited → 429
+- Helmet sets security headers; CORS restricted to FRONTEND_URL
+
+Where to place screenshots & how to reference them  
+You can store images anywhere in the repo; a common convention:
+
+```
+docs/
+└── media/
+    ├── login.png
+    ├── servers-list.png
+    ├── servers-grid.png
+    ├── create-dialog.png
+    ├── edit-dialog.png
+    └── bulk-delete.png
+```
+
+Then reference in README like:
+
+```markdown
+![Login](docs/media/login.png)
+![Servers List](docs/media/servers-list.png)
+![Grid View](docs/media/servers-grid.png)
+![Create Dialog](docs/media/create-dialog.png)
+![Edit Dialog](docs/media/edit-dialog.png)
+![Bulk Delete](docs/media/bulk-delete.png)
+```
+
+Tip: Use PNG for crisp UI shots. Keep filenames lowercase with hyphens. On GitHub, these paths render automatically once committed.
+
+Deliverables Tour (what to show with screenshots/GIFs)
+To align with the challenge’s rubric, include a short visual tour in the README:
+
+- Login flow  
+  ![Login](docs/media/login.png) — Show success; mention JWT is stored.
+
+- Server List (with filters)  
+  ![Servers List](docs/media/servers-list.png) — Demonstrate search, provider/status filters, sort, pagination.
+
+- Grid View (optional)  
+  ![Grid View](docs/media/servers-grid.png)
+
+- Create Dialog  
+  ![Create Dialog](docs/media/create-dialog.png) — Show validation message example.
+
+- Edit Dialog  
+  ![Edit Dialog](docs/media/edit-dialog.png) — Demonstrate status change (chip color should reflect new state after save).
+
+- Bulk Delete  
+  ![Bulk Delete](docs/media/bulk-delete.png) — Show selection + confirmation + post-action refreshed list.
+
+- API Health Check (optional)  
+  A tiny screenshot of GET /api/health in browser/Insomnia to show backend is alive.
+
+Debugging Challenge Proof
+- Screenshot of indexes in MongoDB Compass or a snippet in README proving the indexes exist.
+- Optional GIF showing retry on first slow wake-up (Render cold start).
+
+How to add a GIF: Record as MP4 and convert to GIF (e.g., ScreenToGif on Windows, QuickTime + converter on macOS). Save under docs/media/*.gif and embed with:
+
+```markdown
+![Demo GIF](docs/media/demo.gif)
+```
+
+Mini “Why it works” recap (for non-technical readers)  
+The website (React) shows screens and talks to the server (Express) using URLs starting with /api/.... The server checks that the data makes sense (is the IP a valid IPv4? is RAM within realistic limits?) and saves it to a database (MongoDB). You log in once; the website remembers you with a token so you don’t type the password each request. When you search or filter, the website asks the server for just the matching records and shows a page at a time (pagination) so it stays fast. If something goes wrong, the app shows a human-readable error and avoids getting out of sync.
+
+---
+
+## Appendix: Endpoint Map (quick glance)
+
+```text
+POST   /api/auth/login             → returns { token, user }
+GET    /api/auth/me                → returns { user } (requires Authorization header)
+
+GET    /api/servers                → list (search/filter/sort/pagination)
+GET    /api/servers/:id            → one
+POST   /api/servers                → create
+PUT    /api/servers/:id            → update
+DELETE /api/servers/:id            → remove
+POST   /api/servers/bulk-delete    → remove many { ids: [...] }
+```
+
+Query params (list):
+- page, limit
+- search (matches name or ip_address)
+- provider in {aws,digitalocean,vultr,other,all}
+- status in {active,inactive,maintenance,all}
+- sortBy (e.g., createdAt, name, provider, status)
+- sortOrder in {asc,desc}
+
+---
+
+Put this whole “How Everything Works” block right after your intro and before “Project Structure”.
 
 ## Project Structure
 
@@ -158,7 +385,7 @@ MONGODB_URI=mongodb://mongo:27017/cloudservers
 FRONTEND_URL=http://localhost:5173   # Vite dev URL (5173). Use 5173 if Docker frontend
 
 ADMIN_USERNAME=admin
-ADMIN_EMAIL=admin@example.com
+ADMIN_EMAIL=admin@hotmail.com
 ADMIN_PASSWORD=admin123
 ```
 
@@ -327,44 +554,6 @@ Included Dockerfiles and configs are provided in `backend/` and `frontend/`.
 
 ---
 
-## Free Hosting (Vercel + Render + Atlas)
-
-1) MongoDB Atlas (free)
-- Create cluster → add DB user → allow your IP → copy connection string.
-
-2) Backend on Render (free)
-- New Web Service from `backend/`
-- Build: `npm ci`
-- Start: `node src/app.js`
-- Health: `/api/health`
-- Env:
-  ```
-  MONGODB_URI = <Atlas URI>
-  JWT_SECRET  = <long random>
-  NODE_ENV    = production
-  FRONTEND_URL = https://<your-vercel-app>.vercel.app
-  ```
-- Deploy → note URL like `https://<service>.onrender.com/api`
-
-3) Frontend on Vercel (free)
-- Root: `frontend/`
-- Framework: Vite
-- Add rewrite in `frontend/vercel.json`:
-```json
-{
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://<your-render-service>.onrender.com/api/$1" }
-  ]
-}
-```
-- Deploy → get `https://<your-vercel>.vercel.app`
-- Update Render `FRONTEND_URL` to your Vercel URL and redeploy backend.
-- Seed admin on Render Shell:
-```bash
-node src/seed.js
-```
-
----
 
 ## Security Notes
 
