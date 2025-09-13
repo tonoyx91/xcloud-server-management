@@ -30,20 +30,25 @@ Table of Contents
 
 # How Everything Works — End-to-End (Deep Dive)
 
-This section is a plain-English + diagram explanation of how the app works from the moment a user opens the site to the database update. It’s designed to sit near the top of your README (right after the short intro), so reviewers immediately understand the moving parts.
+This section is a plain-English + diagram explanation of how the app works from the moment a user opens the site to the database update. Put this block right after your short intro and before "Project Structure".
 
 ---
 
 ## Big Picture (at a glance)
 
+Notes:
+- The parse error you saw was caused by literal "\n" inside node labels. GitHub's Mermaid parser does not accept backslash-escaped newlines inside bracket labels and that breaks parsing.
+- Fix: remove "\n" and either keep labels on one line or use HTML line breaks (<br/>). Also ensure the block is fenced with ```mermaid.
+
 ```mermaid
 graph TD
-  A[Browser\n(React + Vite + MUI)] -->|Axios /api/*\n(React Query)| B[Express API\n(Node)]
+  A[Browser<br/>React + Vite + MUI] -->|Axios /api/* (React Query)| B[Express API<br/>Node]
   B -->|Mongoose| C[(MongoDB)]
-  A -. stores JWT .-> A
-  B -. validates w/ Joi & Mongoose .-> B
-  B -. rate limit + helmet .-> B
+  A -. "stores JWT" .-> A
+  B -. "validates w/ Joi & Mongoose" .-> B
+  B -. "rate limit + helmet" .-> B
 ```
+
 
 Frontend (React) shows pages, forms, and tables.
 
@@ -273,7 +278,6 @@ Query params (list):
 
 ---
 
-Put this whole “How Everything Works” block right after your intro and before “Project Structure”.
 
 ## Project Structure
 
