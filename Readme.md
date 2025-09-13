@@ -36,17 +36,16 @@ This section is a plain-English + diagram explanation of how the app works from 
 
 ## Big Picture (at a glance)
 
-Notes:
-- The parse error you saw was caused by literal "\n" inside node labels. GitHub's Mermaid parser does not accept backslash-escaped newlines inside bracket labels and that breaks parsing.
-- Fix: remove "\n" and either keep labels on one line or use HTML line breaks (<br/>). Also ensure the block is fenced with ```mermaid.
 
 ```mermaid
-graph TD
-  A[Browser<br/>React + Vite + MUI] -->|Axios /api/* (React Query)| B[Express API<br/>Node]
+flowchart TD
+  A[Browser<br/>React + Vite + MUI] -->|Axios /api via React Query| B[Express API<br/>Node]
   B -->|Mongoose| C[(MongoDB)]
-  A -. "stores JWT" .-> A
-  B -. "validates w/ Joi & Mongoose" .-> B
-  B -. "rate limit + helmet" .-> B
+
+  %% dashed notes
+  A -.->|stores JWT| A
+  B -.->|validates with Joi & Mongoose| B
+  B -.->|rate limit + Helmet| B
 ```
 
 
