@@ -10,9 +10,14 @@ const base = {
   storage_gb: Joi.number().integer().min(10).max(1048576).required()
 };
 
-const validateServer = (obj) => Joi.object(base).validate(obj, { abortEarly: false });
-const validateServerUpdate = (obj) => Joi.object({
-  ...Object.fromEntries(Object.entries(base).map(([k,v]) => [k, v.optional()]))
-}).min(1).validate(obj, { abortEarly: false });
+const validateServer = (obj) =>
+  Joi.object(base).validate(obj, { abortEarly: false, stripUnknown: true });
+
+const validateServerUpdate = (obj) =>
+  Joi.object(
+    Object.fromEntries(Object.entries(base).map(([k, v]) => [k, v.optional()]))
+  )
+  .min(1)
+  .validate(obj, { abortEarly: false, stripUnknown: true });
 
 module.exports = { validateServer, validateServerUpdate };
