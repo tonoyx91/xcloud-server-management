@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react'
 import {
   Box, Container, Paper, TextField, Typography, IconButton, InputAdornment, Button
 } from '@mui/material';
@@ -8,6 +8,8 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import LoginRounded from '@mui/icons-material/LoginRounded';
+import { useLocation } from 'react-router-dom';
+import { useSnackbar } from '../notify';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,13 +20,26 @@ export default function LoginPage() {
   const [err, setErr] = useState('');
   const nav = useNavigate();
 
+    const { enqueueSnackbar } = useSnackbar(); 
+  const loc = useLocation(); 
+
+  // if we were redirected here after logout, show a toast 
+  useEffect(() => { 
+    const flash = loc.state?.flash; 
+    if (flash?.type === 'logout') { 
+      enqueueSnackbar(flash.message || 'Logged out successfully', { variant: 'info' }); 
+      // clear navigation state so we don't show the toast again on refresh 
+      window.history.replaceState({}, document.title); 
+    } 
+  }, []);
+
   async function submit(e){
     e.preventDefault();
     setErr('');
     try{
       const { data } = await api.post('/auth/login', { usernameOrEmail, password });
       localStorage.setItem('token', data.token);
-      nav('/');
+      nav('/', { state: { flash: { type: 'welcome', title: 'Welcome back!', subtitle: `Signed in as ${data.user?.username || 'admin'}` } } });
     }catch(e){ setErr(e.response?.data?.error || 'Login failed'); }
   }
 

@@ -3,6 +3,7 @@ import {
   Container, Paper, Table, TableHead, TableRow, TableCell, TableBody, Box,
   Grid, Button, Tabs, Tab, Typography, TableContainer
 } from '@mui/material'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppTopBar from '../components/AppTopBar'
 import FiltersBar from '../components/FiltersBar'
 import ServerFormDialog from '../components/ServerFormDialog'
@@ -10,6 +11,9 @@ import ServerRow from '../components/ServerRow'
 import ServerCard from '../components/ServerCard'
 import { useServers } from '../hooks/useServers'
 import api from '../api'
+import { useSnackbar } from '../notify'
+import WelcomeDialog from '../components/WelcomeDialog'
+
 
 export default function ServersPage() {
   const [view, setView] = useState('grid')
@@ -30,15 +34,39 @@ export default function ServersPage() {
   const servers = data?.data || []
   const pages = data?.pagination?.pages || 1
 
+  const loc = useLocation();
+  const nav = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const flash = loc.state?.flash;
+
+  // open the pretty dialog when we land here after login 
+  useEffect(() => {
+    if (flash?.type === 'welcome') {
+      setWelcomeOpen(true);
+      // clear state so refresh won't reopen 
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
   const openCreate = () => { setEditing(null); setOpenForm(true) }
   const openEdit = (s) => { setEditing(s); setOpenForm(true) }
-  const onSaved = () => { setOpenForm(false); refetch() }
+  const onSaved = () => {
+    setOpenForm(false);
+    enqueueSnackbar(editing?._id ? 'Server updated' : 'Server created', { variant: 'success' });
+    refetch();
+  }
 
-  async function remove(id) { await api.delete(`/servers/${id}`); refetch() }
+  async function remove(id) {
+    await api.delete(`/servers/${id}`);
+    enqueueSnackbar('Server deleted', { variant: 'error' });
+    refetch();
+  }
   async function bulkDelete() {
     if (!selected.size) return
     await api.post('/servers/bulk-delete', { ids: [...selected] })
     setSelected(new Set()); refetch()
+    enqueueSnackbar('Bulk delete completed', { variant: 'error' })
   }
   function toggleSel(id, checked) {
     const cp = new Set(selected)
@@ -49,7 +77,10 @@ export default function ServersPage() {
 
   return (
     <>
-      <AppTopBar onLogout={() => { localStorage.removeItem('token'); location.href='/login' }} />
+      <AppTopBar onLogout={() => {
+        localStorage.removeItem('token');
+        nav('/login', { state: { flash: { type: 'logout', message: 'Logged out successfully' } } });
+      }} />
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 800 }}>All Servers</Typography>
 
@@ -62,24 +93,23 @@ export default function ServersPage() {
           onOpenCreate={openCreate}
         />
 
-        <Tabs value={view} onChange={(_,v)=>setView(v)} sx={{ mb:2 }}>
+        <Tabs value={view} onChange={(_, v) => setView(v)} sx={{ mb: 2 }}>
           <Tab label="GRID" value="grid" />
           <Tab label="LIST" value="list" />
         </Tabs>
 
         {isLoading ? (
-          <Paper sx={{ p: 6, textAlign:'center' }}>Loading...</Paper>
+          <Paper sx={{ p: 6, textAlign: 'center' }}>Loading...</Paper>
         ) : servers.length === 0 ? (
-          <Paper sx={{ p: 6, textAlign:'center' }}>
-            <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>Hey there! You have no server yet.</Typography>
-            <Typography variant="body2" sx={{ mb: 2, opacity: 0.7 }}>
-              Check out our Quick Start Documentation.
-            </Typography>
+          <Paper sx={{ p: 6, textAlign: 'center' }}>
+            <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>Welcome to the xCloud Prototype! Host you own Server!</Typography>
+            <Typography variant="body2" sx={{ mb: 3, opacity: 0.7 }}>You have no server yet.</Typography>
+
             <Button variant="contained" onClick={openCreate}>Add New Server</Button>
           </Paper>
         ) : view === 'list' ? (
           <>
-            <Box sx={{ display:'flex', gap:1, mb:1, justifyContent:'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, justifyContent: 'flex-end' }}>
               <Button variant="outlined" color="error" disabled={!selected.size} onClick={bulkDelete}>
                 Bulk Delete ({selected.size})
               </Button>
@@ -127,15 +157,15 @@ export default function ServersPage() {
               </Table>
             </TableContainer>
 
-            <Box sx={{ display:'flex', gap:1, p:2, justifyContent:'center' }}>
-              <Button disabled={page<=1} onClick={()=>setPage(p=>p-1)}>Prev</Button>
-              <Box sx={{ alignSelf:'center' }}>Page {page}/{pages}</Box>
-              <Button disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next</Button>
+            <Box sx={{ display: 'flex', gap: 1, p: 2, justifyContent: 'center' }}>
+              <Button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <Box sx={{ alignSelf: 'center' }}>Page {page}/{pages}</Box>
+              <Button disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Next</Button>
             </Box>
           </>
         ) : (
           <>
-            <Box sx={{ display:'flex', gap:1, mb:1, justifyContent:'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, justifyContent: 'flex-end' }}>
               <Button variant="outlined" color="error" disabled={!selected.size} onClick={bulkDelete}>
                 Bulk Delete ({selected.size})
               </Button>
@@ -155,19 +185,25 @@ export default function ServersPage() {
               ))}
             </Grid>
 
-            <Box sx={{ display:'flex', gap:1, p:2, justifyContent:'center' }}>
-              <Button disabled={page<=1} onClick={()=>setPage(p=>p-1)}>Prev</Button>
-              <Box sx={{ alignSelf:'center' }}>Page {page}/{pages}</Box>
-              <Button disabled={page>=pages} onClick={()=>setPage(p=>p+1)}>Next</Button>
+            <Box sx={{ display: 'flex', gap: 1, p: 2, justifyContent: 'center' }}>
+              <Button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+              <Box sx={{ alignSelf: 'center' }}>Page {page}/{pages}</Box>
+              <Button disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Next</Button>
             </Box>
           </>
         )}
 
         <ServerFormDialog
           open={openForm}
-          onClose={()=>setOpenForm(false)}
+          onClose={() => setOpenForm(false)}
           onSaved={onSaved}
           editing={editing}
+        />
+        <WelcomeDialog
+          open={welcomeOpen}
+          onClose={() => setWelcomeOpen(false)}
+          title={flash?.title}
+          subtitle={flash?.subtitle}
         />
       </Container>
     </>
