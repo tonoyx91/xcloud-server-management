@@ -1,0 +1,63 @@
+# ---- OS / Editor junk --------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+.idea/
+.vscode/
+.eslintcache
+
+# ---- Node / Monorepo ---------------------------------------------------------
+**/node_modules/
+**/.pnp
+.pnp.*
+
+# Logs
+**/logs/
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage
+**/coverage/
+*.lcov
+
+# Build artifacts
+**/dist/
+**/build/
+**/.cache/
+**/.tmp/
+
+# ---- Env files ---------------------------------------------------------------
+# Keep example files tracked
+!backend/.env.example
+!frontend/.env.example
+!.env.example
+
+# Ignore real secrets
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+.env
+.env.*
+
+# ---- Frontend (CRA) ----------------------------------------------------------
+# (build ignored above)
+frontend/.vscode/
+
+# ---- Backend -----------------------------------------------------------------
+backend/tmp/
+backend/logs/
+
+# ---- Docker / Local volumes (optional) ---------------------------------------
+docker-compose.override.yml
+mongo_data/
+
+# ---- Misc --------------------------------------------------------------------
+*.pid
+*.pid.lock
+*.seed
