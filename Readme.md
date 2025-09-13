@@ -3,6 +3,7 @@
 > A compact full-stack project to manage cloud servers with a modern, xCloud-style UI: **login**, **CRUD**, **search/filter/sort/pagination**, **bulk delete**, strong validation, and easy deploys on free tiers.
 
 ![Homepage](docs/media/homepage.png)
+![Homepage](docs/media/servers-lists1.png)
 
 A starter full-stack app using a modern frontend stack (React + Vite + MUI + React Query) and a pragmatic backend (Node + Express + Mongoose). Designed to be easy to run locally (Docker or plain), easy to deploy to free tiers (Vercel + Render + MongoDB Atlas), and simple to extend.
 
@@ -140,6 +141,8 @@ sequenceDiagram
 ![Create Dialog](docs/media/create-dialog2.png)  
 ![Create Dialog](docs/media/create-dialog3.png)  
 ![Create Dialog](docs/media/create-dialog4.png)  
+
+Editing the Server:
 ![Edit Dialog](docs/media/edit-dialog2.png)
 
 6) Bulk delete  
@@ -201,10 +204,6 @@ Server
 
 
 
-```markdown
-![Demo GIF](docs/media/demo.gif)
-```
-
   
 The website (React) shows screens and talks to the server (Express) using URLs starting with /api/.... The server checks that the data makes sense (is the IP a valid IPv4? is RAM within realistic limits?) and saves it to a database (MongoDB). You log in once; the website remembers you with a token so you don’t type the password each request. When you search or filter, the website asks the server for just the matching records and shows a page at a time (pagination) so it stays fast. If something goes wrong, the app shows a human-readable error and avoids getting out of sync.
 
@@ -242,8 +241,7 @@ cloud-server-management/
 ├── README.md
 ├── .env.example
 ├── docker-compose.yml
-├── Makefile                 # optional helper commands
-├── Caddyfile                # optional for VPS HTTPS (not needed for Vercel/Render)
+├── Makefile                 # optional helper commands   
 ├── backend/
 │   ├── Dockerfile
 │   ├── .dockerignore
@@ -474,19 +472,12 @@ curl -X POST http://localhost:5000/api/servers/bulk-delete \
 
 ---
 
-## Testing (nice-to-have)
+## Testing
 
-- Backend (Jest + Supertest): validate IPv4, duplicate errors, auth guards.
+- Backend (Postman, Insomnia): validate IPv4, duplicate errors, auth guards.
 - Frontend (React Testing Library): “create server → appears in list”.
 
-Example:
-```bash
-# backend/package.json
-"test": "jest --runInBand"
-```
-Put tests under `backend/src/__tests__/`.
 
----
 
 ## Docker & Docker Compose
 
@@ -525,26 +516,12 @@ Included Dockerfiles and configs are provided in `backend/` and `frontend/`.
 
 ---
 
-## Troubleshooting & FAQ
 
-CORS error
-- Backend `FRONTEND_URL` must match your frontend origin exactly (scheme + domain). Redeploy backend.
-
-First request slow on Render
-- Free tier sleeps; first request wakes it. Add a small retry on frontend for 5xx if you want.
-
-400 on PUT
-- Backend uses `stripUnknown`; frontend sends only allowed fields. Ensure you don't send `_id`, `__v`, `createdAt`, `updatedAt`.
-
-Status chips not colored
-- Ensure your MUI theme doesn’t override `MuiChip` colors globally; only style default chips.
-
----
 
 ## AI Collaboration Log
 
 - Tools: ChatGPT (scaffold/docs), Claude (alt scaffolds), Copilot (micro edits).
-- Asked & Why: speed up boilerplate, improve UI polish, fix validation, Docker + free hosting recipe.
+- Asked & Why: speed up boilerplate, improve UI polish, fix validation, Joi stripUnknown helping, Docker files, Generating Scripts for automation
 - Accepted vs. Rewrote: accepted base routes/models/UI shells; rewrote Joi `stripUnknown`, Axios retry, theme chip overrides, proxy config.
 - Bugs & Fixes: CRA → migrated to Vite; chip colors overridden → scoped theme; 400 update → whitelist payload + backend strips unknown.
 
@@ -563,14 +540,13 @@ Status chips not colored
 ## Time Spent (template)
 
 ```text
-Planning & reading challenge .......... ~20m
-Backend model & routes ................ ~60m
-Validation & error handling ........... ~30m
-Frontend UI & state ................... ~90m
-Docker & Compose ...................... ~30m
-Deploy (Vercel/Render/Atlas) .......... ~30m
-Docs .................................. ~30m
-TOTAL ................................. ~4h 50m
+Planning & reading challenge .......... ~2 hours
+Backend model & routes ................ ~3 hours
+Validation & error handling ........... ~1 hour
+Frontend UI & state ................... ~5 hours
+Docker & Compose ...................... ~25 minutes
+Docs .................................. ~1 hours
+TOTAL ................................. ~11 hours
 ```
 
 ---
