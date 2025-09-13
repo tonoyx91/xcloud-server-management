@@ -2,6 +2,8 @@
 
 > A compact full-stack project to manage cloud servers with a modern, xCloud-style UI: **login**, **CRUD**, **search/filter/sort/pagination**, **bulk delete**, strong validation, and easy deploys on free tiers.
 
+![Homepage](docs/media/homepage.png)
+
 A starter full-stack app using a modern frontend stack (React + Vite + MUI + React Query) and a pragmatic backend (Node + Express + Mongoose). Designed to be easy to run locally (Docker or plain), easy to deploy to free tiers (Vercel + Render + MongoDB Atlas), and simple to extend.
 
 ---
