@@ -98,7 +98,8 @@ GET /api/servers?page=1&limit=10&search=...&provider=...&status=...&sortBy=...&s
 
 The JWT is automatically attached by an Axios interceptor.
 
-![Servers List](docs/media/servers-list.png)
+![Servers List](docs/media/servers-list1.png)
+![Servers List](docs/media/servers-list2.png)
 
 4) Filter/search/sort/paginate  
 Typing in search or changing filters updates the query string and refetches.
@@ -110,6 +111,7 @@ Backend applies:
 - Pagination with page, limit
 
 ![Filters + Search](docs/media/servers-filters.png)
+![Filters + Search](docs/media/servers-filters2.png)
 
 5) Create / Edit server (dialog)  
 Clicking Add New opens a dialog (MUI). Client-side validation ensures required fields & ranges look valid before calling API.
@@ -134,17 +136,21 @@ sequenceDiagram
   FE->>FE: invalidate & refetch servers list
 ```
 
-![Create Dialog](docs/media/create-dialog.png)  
-![Edit Dialog](docs/media/edit-dialog.png)
+![Create Dialog](docs/media/create-dialog1.png)  
+![Create Dialog](docs/media/create-dialog2.png)  
+![Create Dialog](docs/media/create-dialog3.png)  
+![Create Dialog](docs/media/create-dialog4.png)  
+![Edit Dialog](docs/media/edit-dialog2.png)
 
 6) Bulk delete  
 Select multiple rows, click Bulk Delete → POST /api/servers/bulk-delete { ids: [...] }.
 
 On success, list refetches; if one or more fail, a descriptive error shows and selection remains, avoiding state desync.
 
-![Bulk Delete](docs/media/bulk-delete.png)
+![Bulk Delete](docs/media/bulk-delete1.png)
+![Bulk Delete](docs/media/bulk-delete2.png)
 
-What the backend enforces (business rules)
+What the backend enforces
 - Uniqueness
   - ip_address must be unique (global)
   - (name, provider) pair must be unique
@@ -175,6 +181,9 @@ UI Details (the polish)
 
 ![Grid View](docs/media/servers-grid.png)
 
+Database View
+![Database View](docs/media/database1.png)
+
 Error handling & resilience
 
 Client
@@ -189,68 +198,14 @@ Server
 - Rate-limited → 429
 - Helmet sets security headers; CORS restricted to FRONTEND_URL
 
-Where to place screenshots & how to reference them  
-You can store images anywhere in the repo; a common convention:
 
-```
-docs/
-└── media/
-    ├── login.png
-    ├── servers-list.png
-    ├── servers-grid.png
-    ├── create-dialog.png
-    ├── edit-dialog.png
-    └── bulk-delete.png
-```
 
-Then reference in README like:
-
-```markdown
-![Login](docs/media/login.png)
-![Servers List](docs/media/servers-list.png)
-![Grid View](docs/media/servers-grid.png)
-![Create Dialog](docs/media/create-dialog.png)
-![Edit Dialog](docs/media/edit-dialog.png)
-![Bulk Delete](docs/media/bulk-delete.png)
-```
-
-Tip: Use PNG for crisp UI shots. Keep filenames lowercase with hyphens. On GitHub, these paths render automatically once committed.
-
-Deliverables Tour (what to show with screenshots/GIFs)
-To align with the challenge’s rubric, include a short visual tour in the README:
-
-- Login flow  
-  ![Login](docs/media/login.png) — Show success; mention JWT is stored.
-
-- Server List (with filters)  
-  ![Servers List](docs/media/servers-list.png) — Demonstrate search, provider/status filters, sort, pagination.
-
-- Grid View (optional)  
-  ![Grid View](docs/media/servers-grid.png)
-
-- Create Dialog  
-  ![Create Dialog](docs/media/create-dialog.png) — Show validation message example.
-
-- Edit Dialog  
-  ![Edit Dialog](docs/media/edit-dialog.png) — Demonstrate status change (chip color should reflect new state after save).
-
-- Bulk Delete  
-  ![Bulk Delete](docs/media/bulk-delete.png) — Show selection + confirmation + post-action refreshed list.
-
-- API Health Check (optional)  
-  A tiny screenshot of GET /api/health in browser/Insomnia to show backend is alive.
-
-Debugging Challenge Proof
-- Screenshot of indexes in MongoDB Compass or a snippet in README proving the indexes exist.
-- Optional GIF showing retry on first slow wake-up (Render cold start).
-
-How to add a GIF: Record as MP4 and convert to GIF (e.g., ScreenToGif on Windows, QuickTime + converter on macOS). Save under docs/media/*.gif and embed with:
 
 ```markdown
 ![Demo GIF](docs/media/demo.gif)
 ```
 
-Mini “Why it works” recap (for non-technical readers)  
+  
 The website (React) shows screens and talks to the server (Express) using URLs starting with /api/.... The server checks that the data makes sense (is the IP a valid IPv4? is RAM within realistic limits?) and saves it to a database (MongoDB). You log in once; the website remembers you with a token so you don’t type the password each request. When you search or filter, the website asks the server for just the matching records and shows a page at a time (pagination) so it stays fast. If something goes wrong, the app shows a human-readable error and avoids getting out of sync.
 
 ---

@@ -9,7 +9,7 @@ const serverSchema = new mongoose.Schema({
       message: 'Invalid IPv4 address'
     }
   },
-  provider: { type: String, required: true, enum: ['aws','digitalocean','vultr','other'] },
+  provider: { type: String, required: true, enum: ['aws','digitalocean','vultr','Google Cloud', 'AWS', 'Linode', 'Hostinger'] },
   status:   { type: String, required: true, enum: ['active','inactive','maintenance'], default: 'inactive' },
   cpu_cores:{ type: Number, required: true, min: 1, max: 128 },
   ram_mb:   { type: Number, required: true, min: 512, max: 1048576 },

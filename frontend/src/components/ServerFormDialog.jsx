@@ -83,7 +83,10 @@ export default function ServerFormDialog({ open, onClose, onSaved, editing }) {
               <MenuItem value="aws">AWS</MenuItem>
               <MenuItem value="digitalocean">DigitalOcean</MenuItem>
               <MenuItem value="vultr">Vultr</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
+              <MenuItem value="Hostinger">Hostinger</MenuItem>
+              <MenuItem value="Linode">Linode</MenuItem>
+              <MenuItem value="AWS">AWS</MenuItem>
+              <MenuItem value="Google Cloud">Google Cloud</MenuItem>
             </TextField>
           </Grid>
 
