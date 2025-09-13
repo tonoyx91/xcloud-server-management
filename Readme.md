@@ -148,14 +148,14 @@ Root `.env.example` (copy to `.env`):
 
 ```bash
 COMPOSE_PROJECT_NAME=cloudsrv
-FRONTEND_PORT=3000
+FRONTEND_PORT=5173
 BACKEND_PORT=5000
 MONGO_PORT=27017
 
 JWT_SECRET=change_me_to_a_long_random_string
 NODE_ENV=production
 MONGODB_URI=mongodb://mongo:27017/cloudservers
-FRONTEND_URL=http://localhost:5173   # Vite dev URL (5173). Use 3000 if Docker frontend
+FRONTEND_URL=http://localhost:5173   # Vite dev URL (5173). Use 5173 if Docker frontend
 
 ADMIN_USERNAME=admin
 ADMIN_EMAIL=admin@example.com
@@ -315,7 +315,7 @@ docker compose run --rm --profile seed seed
 ```
 
 Open:
-- UI → http://localhost:3000
+- UI → http://localhost:5173
 - API → http://localhost:5000/api/health
 
 Stop:
